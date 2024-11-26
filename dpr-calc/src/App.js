@@ -1,24 +1,24 @@
-import logo from './logo.svg';
+import {useState, useEffect, useContext} from 'react';
 import './App.css';
+import { DamageGraph } from './graphs/damage-graph';
+import { diceAvg } from './dice-data/dice';
 
 function App() {
+  let data = [];
+  for (let i = 0; i < 21; i++) {
+    data.push(Math.random() * 20);
+  }
+  console.log(diceAvg);
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <h1>Average DPR from AC 10 - 30</h1>
+      <DamageGraph damageData={data}/>
+      <div className="inputs">
+        <h3>Input Fields</h3>
+          <input className="diceInput" type="text"/>
+          <label>d4</label>
+      </div>
+    </>
   );
 }
 
