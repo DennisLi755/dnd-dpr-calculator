@@ -1,3 +1,8 @@
 .diceInput {
   width: 30px;
+  margin-left: 1%;
+}
+
+.atkBonus {
+  width: 50px;
 }
