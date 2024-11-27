@@ -1,4 +1,4 @@
-import {useState, useEffect, useContext} from 'react';
+import {useState, useEffect} from 'react';
 import './App.css';
 import { DamageGraph } from './graphs/damage-graph';
 import { diceAvg, diceTitles } from './dice-data/dice';
@@ -17,33 +17,60 @@ function App() {
   const [diceNum, setDiceNum] = useState([0, 0, 0, 0, 0]);
   const [mod, setMod] = useState(0);
   const [data, setData] = useState([]);
+  const [adv, setAdv] = useState([]);
+  const [disadv, setDisadv] = useState([]);
   useEffect(() => {
-    //console.log(diceNum);
+    console.log(diceNum);
   }, [diceNum]);
 
   const calculateDPR = () => {
     const avgArray = diceNum.map((num, idx) => num * diceAvg[idx]);
     const totalAvg = avgArray.reduce((a, b) => a + b);
+    let C = (21 - critNum) / 20;
+    let DPH = totalAvg + mod;
+    let DPC = totalAvg;
     const dpr = AC.map(val => {
-      let C = (21 - critNum) / 20;
       let P = (21 - val + atkBonus) / 20;
-      let DPH = totalAvg + mod;
-      let DPC = totalAvg;
       if (P >= 1.0) {
         P = 0.95;
       } else if (P <= 0) {
         P = 0.05;
       }
-      return ((P * DPH) + (C * DPC)) * atkNum;
+      return Math.round((((P * DPH) + (C * DPC)) * atkNum) * 10) / 10;
+    });
+    const dprAdv = AC.map(val => {
+      let P = (21 - val + atkBonus) / 20;
+      if (P >= 1.0) {
+        P = 0.95;
+      } else if (P <= 0) {
+        P = 0.05;
+      }
+      let Padv = 1 - (Math.pow(1 - P, 2));
+      let Cadv = 1 - (Math.pow(1 - C, 2));
+      return Math.round((((Padv * DPH) + (Cadv * DPC)) * atkNum) * 10) / 10;
+    });
+    const dprDisadv = AC.map(val => {
+      let P = (21 - val + atkBonus) / 20;
+      if (P >= 1.0) {
+        P = 0.95;
+      } else if (P <= 0) {
+        P = 0.05;
+      }
+      let Pdisadv = Math.pow(P, 2);
+      let Cdisadv = Math.pow(C, 2);
+      return Math.round((((Pdisadv * DPH) + (Cdisadv * DPC)) * atkNum) * 10) / 10;
     });
     console.log(dpr);
     setData(dpr);
+    setAdv(dprAdv);
+    setDisadv(dprDisadv);
   }
+  
 
   return (
     <>
       <h1>Average DPR from AC 10 - 30</h1>
-      <DamageGraph damageData={data}/>
+      <DamageGraph damageData={data} advData={adv} disadvData={disadv}/>
       <div className="inputs">
         <h3>Input Fields</h3>
         <label>Attack Bonus</label>
@@ -54,7 +81,7 @@ function App() {
         <input className="atkBonus" type="number" value={critNum} onChange={e => setCritNum(parseInt(e.target.value))} />
           {diceTitles.map((title, idx) => (
             <>
-              <input className="diceInput" type="number" onChange={e => setDiceNum(diceNum.map((num, id) => id === idx ? num + e.target.value : num))}/>
+              <input className="diceInput" type="number" value={diceNum[idx]} onChange={e => setDiceNum(diceNum.map((num, id) => id === idx ? parseInt(e.target.value) : parseInt(num)))}/>
               <label>{title}</label>
             </>
           ))}
