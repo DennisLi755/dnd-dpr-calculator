@@ -23,42 +23,44 @@ function App() {
     console.log(diceNum);
   }, [diceNum]);
 
+  const calculateP = (armorClass, bonus, adv = false, disadv = false) => {
+    let P = (21 - armorClass + bonus) / 20;
+    if (P >= 1.0) {
+      P = 0.95;
+    } else if (P <= 0) {
+      P = 0.05;
+    }
+    if (adv) {P = 1 - (Math.pow(1 - P, 2))}
+    if (disadv) {P = Math.pow(P, 2)}
+    return P;
+  }
+
+  const calculateC = (crit, adv = false, disadv = false) => {
+    let C = (21 - crit) / 20;
+    if (adv) {C = 1 - (Math.pow(1 - C, 2))}
+    if (disadv) {C = Math.pow(C, 2)}
+    return C;
+  }
+
   const calculateDPR = () => {
     const avgArray = diceNum.map((num, idx) => num * diceAvg[idx]);
     const totalAvg = avgArray.reduce((a, b) => a + b);
-    let C = (21 - critNum) / 20;
     let DPH = totalAvg + mod;
     let DPC = totalAvg;
     const dpr = AC.map(val => {
-      let P = (21 - val + atkBonus) / 20;
-      if (P >= 1.0) {
-        P = 0.95;
-      } else if (P <= 0) {
-        P = 0.05;
-      }
+      let P = calculateP(val, atkBonus);
+      let C = calculateC(critNum);
       return Math.round((((P * DPH) + (C * DPC)) * atkNum) * 10) / 10;
     });
     const dprAdv = AC.map(val => {
-      let P = (21 - val + atkBonus) / 20;
-      if (P >= 1.0) {
-        P = 0.95;
-      } else if (P <= 0) {
-        P = 0.05;
-      }
-      let Padv = 1 - (Math.pow(1 - P, 2));
-      let Cadv = 1 - (Math.pow(1 - C, 2));
-      return Math.round((((Padv * DPH) + (Cadv * DPC)) * atkNum) * 10) / 10;
+      let P = calculateP(val, atkBonus, true);
+      let C = calculateC(critNum, true);
+      return Math.round((((P * DPH) + (C * DPC)) * atkNum) * 10) / 10;
     });
     const dprDisadv = AC.map(val => {
-      let P = (21 - val + atkBonus) / 20;
-      if (P >= 1.0) {
-        P = 0.95;
-      } else if (P <= 0) {
-        P = 0.05;
-      }
-      let Pdisadv = Math.pow(P, 2);
-      let Cdisadv = Math.pow(C, 2);
-      return Math.round((((Pdisadv * DPH) + (Cdisadv * DPC)) * atkNum) * 10) / 10;
+      let P = calculateP(val, atkBonus, false, true);
+      let C = calculateC(critNum, false, true);
+      return Math.round((((P * DPH) + (C * DPC)) * atkNum) * 10) / 10;
     });
     console.log(dpr);
     setData(dpr);
