@@ -16,5 +16,7 @@ const dice = [
 const diceTitles = ["d4", "d6", "d8", "d10", "d12"];
 
 const diceAvg = dice.map(die => (die[0] + die[die.length - 1]) / 2);
+const diceMin = 1;
+const diceMax = [4, 6, 8, 10, 12];
 
-export {diceAvg, dice, diceTitles};
+export {diceAvg, dice, diceTitles, diceMin, diceMax};

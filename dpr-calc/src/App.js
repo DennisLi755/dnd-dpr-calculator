@@ -15,6 +15,8 @@ function App() {
   const [atkNum, setAtkNum] = useState(0);
   const [critNum, setCritNum] = useState(20);
   const [diceNum, setDiceNum] = useState([0, 0, 0, 0, 0]);
+  const [firstHitBonus, setFirstHitBonus] = useState([0, 0, 0, 0, 0]);
+  const [firstHitMod, setFirstHitMod] = useState(0);
   const [mod, setMod] = useState(0);
   const [data, setData] = useState([]);
   const [adv, setAdv] = useState([]);
@@ -23,7 +25,7 @@ function App() {
     console.log(diceNum);
   }, [diceNum]);
 
-  const calculateP = (armorClass, bonus, adv = false, disadv = false) => {
+  const calculateP = (armorClass, bonus, C, adv = false, disadv = false, firstHit) => {
     let P = (21 - armorClass + bonus) / 20;
     if (P >= 1.0) {
       P = 0.95;
@@ -32,7 +34,11 @@ function App() {
     }
     if (adv) {P = 1 - (Math.pow(1 - P, 2))}
     if (disadv) {P = Math.pow(P, 2)}
-    return P;
+    let returnP = {"P": P,}
+    if (firstHit) {
+      returnP["OneHit"] = 1 - (Math.pow(1 - P, atkNum));
+    }
+    return returnP;
   }
 
   const calculateC = (crit, adv = false, disadv = false) => {
@@ -44,23 +50,44 @@ function App() {
 
   const calculateDPR = () => {
     const avgArray = diceNum.map((num, idx) => num * diceAvg[idx]);
+    const avgFirstHit = firstHitBonus.map((num, idx) => num * diceAvg[idx]);
     const totalAvg = avgArray.reduce((a, b) => a + b);
+    const firstHitAvg = avgFirstHit.reduce((a, b) => a + b);
     let DPH = totalAvg + mod;
     let DPC = totalAvg;
     const dpr = AC.map(val => {
-      let P = calculateP(val, atkBonus);
       let C = calculateC(critNum);
-      return Math.round((((P * DPH) + (C * DPC)) * atkNum) * 10) / 10;
+      let probability = calculateP(val, atkBonus, C, false, false, firstHitAvg !== 0);
+      let D1 = 0;
+      let D2 = 0;
+      if (firstHitAvg !== 0) {
+        console.log(probability["OneHit"]);
+        D1 = probability["OneHit"] * (firstHitAvg + firstHitMod);
+        D2 = probability["OneHit"] * (C / probability["P"]) * firstHitAvg;
+      }
+      return Math.round((((probability["P"] * DPH) + (C * DPC)) * atkNum + D1 + D2) * 10) / 10;
     });
     const dprAdv = AC.map(val => {
-      let P = calculateP(val, atkBonus, true);
       let C = calculateC(critNum, true);
-      return Math.round((((P * DPH) + (C * DPC)) * atkNum) * 10) / 10;
+      let probability = calculateP(val, atkBonus, C, true, false, firstHitAvg !== 0);
+      let D1 = 0;;
+      let D2 = 0;
+      if (firstHitAvg !== 0) {
+        D1 = probability["OneHit"] * (firstHitAvg + firstHitMod);
+        D2 = probability["OneHit"] * (C / probability["P"]) * firstHitAvg;
+      }
+      return Math.round((((probability["P"] * DPH) + (C * DPC)) * atkNum + D1 + D2) * 10) / 10;
     });
     const dprDisadv = AC.map(val => {
-      let P = calculateP(val, atkBonus, false, true);
       let C = calculateC(critNum, false, true);
-      return Math.round((((P * DPH) + (C * DPC)) * atkNum) * 10) / 10;
+      let probability = calculateP(val, atkBonus, C, false, true, firstHitAvg !== 0);
+      let D1 = 0;
+      let D2 = 0;
+      if (firstHitAvg !== 0) {
+        D1 = probability["OneHit"] * (firstHitAvg + firstHitMod);
+        D2 = probability["OneHit"] * (C / probability["P"]) * firstHitAvg;
+      }
+      return Math.round((((probability["P"]  * DPH) + (C * DPC)) * atkNum + D1 + D2) * 10) / 10;
     });
     console.log(dpr);
     setData(dpr);
@@ -74,7 +101,8 @@ function App() {
       <h1>Average DPR from AC 10 - 30</h1>
       <DamageGraph damageData={data} advData={adv} disadvData={disadv}/>
       <div className="inputs">
-        <h3>Input Fields</h3>
+        <h2>Input Fields</h2>
+        <h3>Action Attack</h3>
         <label>Attack Bonus</label>
         <input className="atkBonus" type="number" onChange={e => setAtkBonus(parseInt(e.target.value))} />
         <label>Num. Attacks</label>
@@ -89,6 +117,15 @@ function App() {
           ))}
         +
         <input className="diceInput" type="number" onChange={e => setMod(parseInt(e.target.value))} />
+        <h3>Bonus on First Hit</h3>
+          {diceTitles.map((title, idx) => (
+            <>
+              <input className="diceInput" type="number" value={firstHitBonus[idx]} onChange={e => setFirstHitBonus(firstHitBonus.map((num, id) => id === idx ? parseInt(e.target.value) : parseInt(num)))}/>
+              <label>{title}</label>
+            </>
+          ))}
+        +
+        <input className="diceInput" type="number" onChange={e => setFirstHitMod(parseInt(e.target.value))} />
         <button onClick={calculateDPR}>Calculate DPR</button>
       </div>
     </>
